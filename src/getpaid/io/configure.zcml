@@ -1,0 +1,12 @@
+<configure
+ xmlns:zope="http://namespaces.zope.org/zope"
+ >
+  
+ <zope:adapter
+     factory = ".writer.OrderExportWriter"
+     for = "getpaid.core.interfaces.IOrder"
+     provides = ".interfaces.IObjectExportWriter"
+	 trusted="true"
+     />  
+  
+</configure>

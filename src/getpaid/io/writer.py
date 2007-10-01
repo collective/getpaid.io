@@ -2,35 +2,71 @@
 import tempfile, tarfile
 
 import getpaid.core.interfaces
-from ore.xd import ExportWriter
+from ore.xd import ExportWriter, ImportReader
 from zope import schema, component, interface
-
+from zope.i18nmessageid.message import Message
+from xml.sax.xmlreader import AttributesNSImpl
 from Products.PloneGetPaid.interfaces import IGetPaidManagementOptions
 
 import interfaces
+
+#ImportReader.register_type( )
+ExportWriter.register_type( Message, "msgid")
+
 # for property option objects
-def getPropertyMap( self, interface=None ):
-    interface = interface or self.interface
+def getPropertyMap( self, interface ):
     d = {}
-    for field in schema.getFields( interface ):
-        value = field.get( self )
+    for field in schema.getFields( interface ).values():
+        value = field.query( self )
+        # recurse into subobject fields
+        if isinstance( field, schema.Object) and value is not None:
+            value = getPropertyMap( value, field.schema )
+            
         d[ field.__name__ ] = value
     return d
-
-
+    
+# generically introspects all schemas
+def getSchemaMap( self,  interfaces=None):
+    
+    # duplicate fields get overwritten, first one in interface specification wins
+    if interfaces is None:
+        interfaces = list( interface.providedBy( self ) )
+        interfaces.reverse()
+        
+    if not isinstance( interfaces, (list, tuple) ):
+        raise SyntaxError("invalid interfaces arguement")
+    
+    d = {}
+    for i in interfaces:
+        d.update( getPropertyMap( self, i ) )
+    return d
     
 class OrderExportWriter( object ):
     interface.implements( interfaces.IObjectExportWriter )
 
+    def __init__( self, context ):
+        self.context = context
+
     def exportToStream( self, stream ):
         writer = ExportWriter( stream )        
-        state = getPropertyMap( self.context, getpaid.core.interfaces.IOrder )
-        writer.dumpDictionary( 'properties', state )
+
+        attrs = AttributesNSImpl( {}, {} )
+
+        # wrap data in enclosing element
+        writer.startElementNS( (None, 'order'), 'order', attrs)
+        
+        # dump settings, recurses into subobjects
+        properties = getPropertyMap( self.context, getpaid.core.interfaces.IOrder )
+        writer.dumpDictionary( 'properties', properties )
+
+        # dump audit log
         log = self.serializeAuditLog()
         writer.dumpList( 'log', log )
+        
+        writer.endElementNS( (None, 'order'), 'order')
         writer.close()
 
-    def serializeAuditLog( self, stream):
+    def serializeAuditLog( self ):
         log_entries = []
         for entry in getpaid.core.interfaces.IOrderWorkflowLog( self.context ):
             state = getPropertyMap( entry, getpaid.core.interfaces.IOrderWorkflowEntry)
@@ -55,51 +91,55 @@ class StoreWriter( object ):
         """
         returns a stream to an archive file
         """
-        stream = tempfile.mktempfile()
-        tarfile = tarfile.TarFile( stream )
+        stream = tempfile.TemporaryFile()
+        tfile = tarfile.TarFile.open( mode='w|gz',  fileobj=stream )
         
-        self.exportSettings( tarfile )
-        self.exportOrders( tarfile )
-        self.exportProducts( tarfile )
-        
+        self.exportSettings( tfile )
+        self.exportOrders( tfile )
+        self.exportProducts( tfile )
+        stream.seek(0,0)
+        return stream
 
     def addStream( self, stream, tarfile, name ):
         stream.seek(0,0)
-        info = tarfile.gettarinfo( stream, name)
-        tarfile.addfile( info, stream)   
+        info = tarfile.gettarinfo( fileobj=stream, arcname=name)
+        tarfile.addfile( info, fileobj=stream)   
 
     def exportSettings( self, tarfile ):
         options = IGetPaidManagementOptions( self.store )
-        settings = getPropertyMap( options )        
-        stream = tempfile.mktemp()
+        settings = getPropertyMap( options, IGetPaidManagementOptions )        
+        stream = tempfile.TemporaryFile()
         try:
             writer = ExportWriter( stream )
             writer.dumpDictionary( 'settings', settings)
             writer.close()
-            self.addStream( stream, 'settings.xml' )
+            self.addStream( stream, tarfile, 'settings.xml' )
         finally:
             stream.close()
      
     def exportOrders( self, tarfile ):
         orders = component.getUtility(getpaid.core.interfaces.IOrderManager)
         
-        for o in orders:
+        for o in orders.storage.values():
             writer = interfaces.IObjectExportWriter( o )
-            stream = tempfile.mktempfile()
+            stream = tempfile.TemporaryFile()
             try:
                 writer.exportToStream( stream )    
-                self.addStream( stream, 'orders/%s.xml'%o.order_id )
+                self.addStream( stream, tarfile, 'orders/%s.xml'%o.order_id )
             finally:
                 stream.close()
 
     def exportProducts( self, tarfile ):
-        product_catalog = component.getUtility(getpaid.core.interfaces.IProductCatalog)
+        product_catalog = component.queryUtility(getpaid.core.interfaces.IProductCatalog, None)
+        if product_catalog is None:
+            return 
+            
         for p in product_catalog:
             writer = interfaces.IObjectExportWriter( p )
-            stream = tempfile.mktempfile()
+            stream = tempfile.TemporaryFile()
             try:
                 writer.exportToStream( stream )    
-                self.addStream( stream, 'products/%s.xml'%p.item )
+                self.addStream( stream, tarfile, 'products/%s.xml'%p.item )
             finally:
                 stream.close()
 

@@ -2,9 +2,9 @@
 $Id$
 
 """
-from zope import interface, schema
+from zope import interface
 
-class IStoreWriter( Interface ):
+class IStoreWriter( interface.Interface ):
     
     def toArchiveFile( file_path ):
         """
@@ -16,7 +16,7 @@ class IStoreWriter( Interface ):
         returns a stream to an archive file
         """
 
-class IStoreReader( Interface ):
+class IStoreReader( interface.Interface ):
     
     def importArchiveFile( file_path ):
         """ 
@@ -34,7 +34,7 @@ class IObjectExportWriter( interface.Interface ):
         """
         """
                 
-class IFileExporter( Interface ):
+class IFileExporter( interface.Interface ):
     
     def exportString( ):
         """ """
@@ -42,11 +42,10 @@ class IFileExporter( Interface ):
     def exportStream( ):
         """ """
 
-class IFileImporter( Interface ):
+class IFileImporter( interface.Interface ):
     
     def importStream( stream ):
         """ import the file stream """
     
     def importPath( file_path ):
         """ import the file path """
-    

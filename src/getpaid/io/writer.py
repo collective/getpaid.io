@@ -2,11 +2,18 @@
 import tempfile, tarfile
 
 import getpaid.core.interfaces
+
 from ore.xd import ExportWriter, ImportReader
+
+from zope.app.container.interfaces import IContainer
 from zope import schema, component, interface
 from zope.i18nmessageid.message import Message
 from xml.sax.xmlreader import AttributesNSImpl
-from Products.PloneGetPaid.interfaces import IGetPaidManagementOptions
+
+try:
+    from Products.PloneGetPaid.interfaces import IGetPaidManagementOptions
+except ImportError:
+    class IGetPaidManagementOptions( interface.Interface ): pass
 
 import interfaces
 
@@ -20,25 +27,32 @@ def getPropertyMap( self, interface ):
         value = field.query( self )
         # recurse into subobject fields
         if isinstance( field, schema.Object) and value is not None:
-            value = getPropertyMap( value, field.schema )
+            value = getSchemaMap( value, field.schema )
             
         d[ field.__name__ ] = value
     return d
     
-# generically introspects all schemas
+# 
 def getSchemaMap( self,  interfaces=None):
-    
+    """
+    generically introspects all schemas, and dumps them, recurses into children, and schema attribute objects
+    """
     # duplicate fields get overwritten, first one in interface specification wins
     if interfaces is None:
         interfaces = list( interface.providedBy( self ) )
         interfaces.reverse()
-        
+    
     if not isinstance( interfaces, (list, tuple) ):
-        raise SyntaxError("invalid interfaces arguement")
+        interfaces = [ interfaces ]
     
     d = {}
     for i in interfaces:
         d.update( getPropertyMap( self, i ) )
+        if issubclass( i, IContainer) and not 'contained' in d:
+            children = [ (k, getSchemaMap(v) ) for k,v in self.items()]
+            # sigh.. we loose ordering on ordered containers
+            if children:
+                d['contained'] = dict( children )
     return d
     
 class OrderExportWriter( object ):
@@ -56,7 +70,7 @@ class OrderExportWriter( object ):
         writer.startElementNS( (None, 'order'), 'order', attrs)
         
         # dump settings, recurses into subobjects
-        properties = getPropertyMap( self.context, getpaid.core.interfaces.IOrder )
+        properties = getSchemaMap( self.context, getpaid.core.interfaces.IOrder )
         writer.dumpDictionary( 'properties', properties )
 
         # dump audit log
@@ -69,7 +83,7 @@ class OrderExportWriter( object ):
     def serializeAuditLog( self ):
         log_entries = []
         for entry in getpaid.core.interfaces.IOrderWorkflowLog( self.context ):
-            state = getPropertyMap( entry, getpaid.core.interfaces.IOrderWorkflowEntry)
+            state = getSchemaMap( entry, getpaid.core.interfaces.IOrderWorkflowEntry)
             log_entries.append( state )
         return log_entries
         

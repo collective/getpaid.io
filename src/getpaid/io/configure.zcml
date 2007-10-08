@@ -8,5 +8,12 @@
      provides = ".interfaces.IObjectExportWriter"
 	 trusted="true"
      />  
+
+ <zope:adapter
+     factory = ".writer.StoreWriter"
+     for = "getpaid.core.interfacs.IStore"
+     provides = ".interfaces.IStoreWriter"
+     trusted = "true"
+     />
   
 </configure>

@@ -6,13 +6,27 @@
      factory = ".writer.OrderExportWriter"
      for = "getpaid.core.interfaces.IOrder"
      provides = ".interfaces.IObjectExportWriter"
-	 trusted="true"
+     trusted="true"
      />  
 
  <zope:adapter
      factory = ".writer.StoreWriter"
      for = "getpaid.core.interfacs.IStore"
      provides = ".interfaces.IStoreWriter"
+     trusted = "true"
+     />
+
+ <zope:adapter
+     factory = ".reader.OrderImportReader"
+     for = "getpaid.core.interfaces.IOrder"
+     provides = ".interfaces.IObjectImportReader"
+     trusted="true"
+     />  
+
+ <zope:adapter
+     factory = ".reader.StoreReader"
+     for = "getpaid.core.interfacs.IStore"
+     provides = ".interfaces.IStoreReader"
      trusted = "true"
      />
   

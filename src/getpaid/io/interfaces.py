@@ -33,19 +33,10 @@ class IObjectExportWriter( interface.Interface ):
     def exportToStream( stream ):
         """
         """
-                
-class IFileExporter( interface.Interface ):
-    
-    def exportString( ):
-        """ """
-        
-    def exportStream( ):
-        """ """
 
-class IFileImporter( interface.Interface ):
+class IObjectImportReader( interface.Interface ):
     
     def importStream( stream ):
         """ import the file stream """
-    
-    def importPath( file_path ):
-        """ import the file path """
+
+

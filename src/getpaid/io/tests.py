@@ -21,8 +21,8 @@ from zope import component
 from xml.sax import make_parser
 from ore.xd import ImportReader
 
-from getpaid.io import writer
-from getpaid.io.interfaces import IStoreWriter, IObjectExportWriter
+from getpaid.io import writer, reader
+from getpaid.io.interfaces import IStoreWriter, IObjectExportWriter, IObjectImportReader
 from getpaid.core.interfaces import IOrder, IOrderManager, IOrderWorkflowLog, workflow_states
 from getpaid.core import order, cart, item as lineitem
 from getpaid.core.workflow import store, order as oworkflow
@@ -38,7 +38,7 @@ class OrderImportTests( unittest.TestCase ):
     def tearDown( self ):
         placelesssetup.tearDown()
 
-class OrderExportTests( unittest.TestCase ):
+class OrderImportExportTests( unittest.TestCase ):
 
     def setUp( self ):
         placelesssetup.setUp()
@@ -51,13 +51,16 @@ class OrderExportTests( unittest.TestCase ):
         self.orders = None
         self.manager = None
         
-    def testOrderExport( self ):
-        
+    def testOrderExportImport( self ):
+        # verify import and exporting orders across set of orders, sanity checking along the way 
         for o in self.orders:
+            # first serialize the order
             stream = StringIO()
             writer = IObjectExportWriter( o )
             writer.exportToStream( stream )
             serialized = stream.getvalue()
+            
+            # next deserialize the data and sanity check it
             parser = make_parser()
             reader = ImportReader()
             parser.setContentHandler( reader )
@@ -66,8 +69,18 @@ class OrderExportTests( unittest.TestCase ):
             data = reader.getData()
             self.assertEqual( len(data['order']['properties']['shopping_cart']['contained']), len( o.shopping_cart ) )
 
+            # next import the order
+            stream.seek(0, 0)
+            oi = order.Order()
+            reader = IObjectImportReader( oi )
+            reader.importStream( stream )            
             
-
+            # next verify that the imported order serialization is equivalent to the originals
+            test_stream = StringIO()
+            writer = IObjectExportWriter( oi ) 
+            writer.exportToStream( test_stream )
+            self.assertEqual( len(serialized), len(test_stream.getvalue()) )
+            
 def createOrders( how_many=10 ):
     manager = component.getUtility( IOrderManager )
 
@@ -123,6 +136,7 @@ def coreSetUp(doctest):
                          attribute.AttributeAnnotations)
                          
     ztapi.provideAdapter( IOrder, IObjectExportWriter, writer.OrderExportWriter)
+    ztapi.provideAdapter( IOrder, IObjectImportReader, reader.OrderReader)
     
     ztapi.provideAdapter( IOrder, IOrderWorkflowLog, order.OrderWorkflowLog )
 
@@ -142,7 +156,7 @@ def coreSetUp(doctest):
 
 def test_suite():
     return unittest.TestSuite((
-        unittest.makeSuite( OrderExportTests ),
+        unittest.makeSuite( OrderImportExportTests ),
         ))
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@
 
  <zope:adapter
      factory = ".writer.StoreWriter"
-     for = "getpaid.core.interfacs.IStore"
+     for = "getpaid.core.interfaces.IStore"
      provides = ".interfaces.IStoreWriter"
      trusted = "true"
      />

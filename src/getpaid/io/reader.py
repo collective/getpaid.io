@@ -111,7 +111,7 @@ class OrderReader(object):
     def importCart( self, cart_items ):
         items = cart.ShoppingCart()
         for k, i in cart_items.items():
-            line_item = item.PayableLineItem()
+            line_item = item.LineItem()
             utils.setSchemaMap( line_item, i )
             items[ k ] = line_item
         return items

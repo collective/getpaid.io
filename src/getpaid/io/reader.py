@@ -4,7 +4,7 @@ from zope import interface, component
 from ore.xd import ImportReader
 
 import getpaid.core.interfaces
-from getpaid.core import order, item, cart
+from getpaid.core import order, item, cart, payment
 
 from getpaid.io import utils, interfaces
 
@@ -68,6 +68,7 @@ class StoreReader( object ):
 
     def importSettings( self ):
         data = extractStream( self.readPath( 'settings.xml' ) )
+        utils.setSchemaMap( self.context, data )
         
     def importOrders( self, tarfile ):
         order_manager = component.getUtility( getpaid.core.interfaces.IOrderManager )
@@ -116,14 +117,23 @@ class OrderReader(object):
             items[ k ] = line_item
         return items
 
-    def importBillingAddress( self, data ):
-        pass
+    def importBillingAddress( self, data ):        
+        if not data: return
+        address = payment.BillingAddress()
+        utils.setSchemaMap( address, data)
+        return address
         
     def importShippingAddress( self, data ):
-        pass
-        
+        if not data: return        
+        address = payment.ShippingAddress()
+        utils.setSchemaMap( address, data)
+        return address
+
     def importContactInformation( self, data ):
-        pass
+        if not data: return        
+        info = payment.ContactInformation()
+        utils.setSchemaMap( info, data)
+        return info
         
     def importWorkflowLog( self, log_entries):
         log = getpaid.core.interfaces.IOrderWorkflowLog( self.context )

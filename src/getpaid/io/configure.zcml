@@ -17,7 +17,7 @@
      />
 
  <zope:adapter
-     factory = ".reader.OrderImportReader"
+     factory = ".reader.OrderReader"
      for = "getpaid.core.interfaces.IOrder"
      provides = ".interfaces.IObjectImportReader"
      trusted="true"
@@ -25,7 +25,7 @@
 
  <zope:adapter
      factory = ".reader.StoreReader"
-     for = "getpaid.core.interfacs.IStore"
+     for = "getpaid.core.interfaces.IStore"
      provides = ".interfaces.IStoreReader"
      trusted = "true"
      />

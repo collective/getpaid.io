@@ -25,6 +25,8 @@ def getPropertyMap( self, interface ):
     """
     d = {}
     for field in schema.getFields( interface ).values():
+        if field.__name__.startswith('__'):
+            continue
         value = field.query( self )
         # recurse into subobject fields
         if isinstance( field, schema.Object) and value is not None:

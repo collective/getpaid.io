@@ -1,16 +1,15 @@
 
 import tarfile, gzip
+from xml.sax import make_parser
+
 from zope import interface, component
+from zope.i18nmessageid.message import Message
+
 from ore.xd import ImportReader
 
 import getpaid.core.interfaces
 from getpaid.core import order, item, cart, payment
-
 from getpaid.io import utils, interfaces
-
-from zope.i18nmessageid.message import Message
-
-from xml.sax import make_parser
 
 ImportReader.register_type( "msgid", Message )
 
@@ -39,9 +38,13 @@ class TarListing( object ):
                 entries = self._data.setdefault( dpath, [] )
             if not segments[i] in entries:
                 entries.append( segments[i] )
+                
     def listDirectory( self, dpath ):
         return iter( self._data.get( dpath, () ) )    
     
+    def dir( self, dpath ):
+        return [ '/'.join((dpath,x)) for x in  self._data.get( dpath, () )]
+        
 class StoreReader( object ):
     
     interface.implements( interfaces.IStoreReader )
@@ -53,12 +56,14 @@ class StoreReader( object ):
         """ 
         import the given archive file
         """
+        fh = open( file_path )
+        self.importArchiveStream( fh )
         
     def importArchiveStream( self, stream ):
         """
         import the archive stream
         """
-        gzip_stream = gzip.GzipFile( stream )
+        gzip_stream = gzip.GzipFile( fileobj=stream )
         self.archive = tarfile.TarFile( 'store-archive', 'r', gzip_stream )
         self.listing = TarListing( self.archive.getnames() )
         
@@ -70,25 +75,32 @@ class StoreReader( object ):
         data = extractStream( self.readPath( 'settings.xml' ) )
         utils.setSchemaMap( self.context, data )
         
-    def importOrders( self, tarfile ):
+    def importOrders( self ):
         order_manager = component.getUtility( getpaid.core.interfaces.IOrderManager )
         for file_name, order_stream in self.readDirectory( 'orders'):
+            oid = file_name[len('orders/'):-4]
+            
+            if order_manager.get(oid) is not None:
+                continue
+                
             o = order.Order()
+            o.order_id = oid
+            
             reader = interfaces.IObjectImportReader( o )
             reader.importStream( order_stream )
             order_manager.store( o )
             
-    def importProducts( self, tarfile ):
+    def importProducts( self ):
         product_catalog = component.getUtility( getpaid.core.interfaces.IProductCatalog )
         for file_name, product_stream in self.readDirectory('products'):
             pass
 
     def readPath( self, tar_path ):
         archive_member = self.archive.getmember( tar_path ) 
-        self.archive.extractfile( archive_member )
+        return self.archive.extractfile( archive_member )
 
     def readDirectory( self, tar_path ):
-        return [ ( p, self.readPath( p ) ) for p in self.listing.listDirectory( tar_path ) ]
+        return [ ( p, self.readPath( p ) ) for p in self.listing.dir( tar_path ) ]
         
 class OrderReader(object):
 

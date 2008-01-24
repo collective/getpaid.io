@@ -43,8 +43,8 @@ def setPropertyMap( self, interface, values ):
 
 def getPropertyMap( self, interface ):
     """ 
-    extract properties from an object of the given zope schema, in key/value form
-    and schema.Object attributes, returns a nested dictionary.
+    extract properties from an object of the given zope schema, in a mapping by
+    field schema.name, recurses into schema.Objects, returns a nested dictionary.
     """
     d = {}
     for field in schema.getFields( interface ).values():

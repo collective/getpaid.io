@@ -1,0 +1,10 @@
+=======
+CHANGES
+=======
+
+
+0.2 (2008-08-22)
+----------------
+
+- Eggified package
+- Added buildout files and general text documents to project root.

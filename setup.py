@@ -1,37 +1,51 @@
-# Copyright (c) 2007 ifPeople, Kapil Thangavelu, and Contributors
-#
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
-#
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
+"""
+$Id$
 
+Copyright (c) 2007 - 2008 ifPeople, Kapil Thangavelu, and Contributors
+All rights reserved. Refer to LICENSE.txt for details of distribution and use.
+
+Distutils setup
+ 
+"""
+
+import os
 from setuptools import setup, find_packages
+
+def read(*rnames):
+    return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
 setup(
     name="getpaid.io",
-    version="0.2.0",
+    version="0.3dev",
+    license = 'ZPL2.1',
+    author="Getpaid Community",
+    author_email="getpaid-dev@googlegroups.com",
+    description="Get paid xml import/export for setting and orders",
+    long_description = (
+        read('README.txt')
+        + '\n' +
+        read('CHANGES.txt')
+        + '\n' +
+        'Detailed Documentation\n'
+        '**********************\n'
+        + '\n' +
+        read('src', 'getpaid', 'io', 'README.txt')
+        + '\n' +
+        'Download\n'
+        '**********************\n'
+        ),
+    classifiers = [
+        "Framework :: Zope2",
+        "Framework :: Zope3",
+        "Framework :: Plone"
+        ],
+    url="http://code.google.com/p/getpaid",
     packages=find_packages('src'),
     package_dir={'':'src'},
     namespace_packages=['getpaid'],
     include_package_data=True,
-    install_requires = [ 'setuptools',
-                         'getpaid.core' 
-                         ],
+    install_requires = ['setuptools',
+                        'getpaid.core'
+                       ],
     zip_safe = False,
     )

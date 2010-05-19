@@ -5,7 +5,7 @@ Copyright (c) 2007 - 2008 ifPeople, Kapil Thangavelu, and Contributors
 All rights reserved. Refer to LICENSE.txt for details of distribution and use.
 
 Distutils setup
- 
+
 """
 
 import os
@@ -45,7 +45,8 @@ setup(
     namespace_packages=['getpaid'],
     include_package_data=True,
     install_requires = ['setuptools',
-                        'getpaid.core'
+                        'getpaid.core',
+                        'ore.xd'
                        ],
     zip_safe = False,
     )
